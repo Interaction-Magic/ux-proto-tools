@@ -12,13 +12,13 @@ Comments or questions: hello@interactionmagic.com
 
 | Library | What does it do? |
 | --- | --- |
-| `Input.js` | Handles physical buttons via keyboard, Serial or click, including single/double/long presses |
-| `Undo.js` | Provides undo/redo history stack | 
-| `Serial.js` | Connect to and read/write data over serial with WebUSB |
+| [`Input.js`](https://lib.interactionmagic.com/src/Input.js) | Handles physical buttons via keyboard, Serial or click, including single/double/long presses |
+| [`Undo.js`](https://lib.interactionmagic.com/src/Undo.js) | Provides undo/redo history stack | 
+| [`Serial.js`](https://lib.interactionmagic.com/src/Serial.js) | Connect to and read/write data over serial with WebUSB |
 
 ## How to include
 
-Download file, or direct link to hosted version on Github, e.g:
+Download files on [Github](https://github.com/Interaction-Magic/ux-proto-tools), or direct link to hosted versions:
 
 ```html
 <script src="https://lib.interactionmagic.com/src/Input.js"></script>
