@@ -1,6 +1,6 @@
 # Hardware UX Prototyping Tools
 
-🕹️🎮🎚️🎛️🎹🔊 
+🕹️ 🎮 🎚️ 🎛️ 🎹 🔊 
 
 A collection of mini JS libraries to support hardware UX prototyping. Each library is a standalone class, written in vanilla JS with no dependencies. Import or include as you wish!
 
