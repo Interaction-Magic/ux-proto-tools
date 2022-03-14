@@ -15,6 +15,7 @@ Comments or questions: hello@interactionmagic.com
 | [`Input.js`](https://lib.interactionmagic.com/src/Input.js) | Handles physical buttons via keyboard, Serial or click, including single/double/long presses |
 | [`Undo.js`](https://lib.interactionmagic.com/src/Undo.js) | Provides undo/redo history stack | 
 | [`Serial.js`](https://lib.interactionmagic.com/src/Serial.js) | Connect to and read/write data over serial with WebUSB |
+| [`Logger.js`](https://lib.interactionmagic.com/src/Logger.js) | Creates a simple logging panel on the page. Include the [`Logger.css`](https://lib.interactionmagic.com/src/Logger.css) as well. |
 
 ## How to include
 

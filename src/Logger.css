@@ -1,0 +1,55 @@
+/* *************************************************** */
+/* Styling for Logger.js                              */
+
+/* Log panel itself */
+
+.log{
+	padding: 10px;
+	overflow: hidden scroll;
+	height: 100%;
+	font-family: "IBM Plex Mono", monospace;
+	font-size: 0.8em;
+	font-weight: 400;
+	box-sizing: border-box;
+	background-color: rgba(0,0,0,0.03);
+}
+
+/* Individual messages */
+
+.log p{
+	margin: 0;
+	height: 21px;
+	line-height: 21px;
+	white-space: nowrap;
+	cursor: default;
+}
+
+/* Whole panel hover effect */
+
+.log .time{opacity: 0.5;}
+
+.log.log_hover_effect:hover p{opacity: 0.5;}
+.log.log_hover_effect:hover .time{opacity: 1;}
+.log.log_hover_effect p:hover{opacity: 1;}
+
+/* Show / hide toggles */
+
+.log .error{display:none;}
+.log .status{display:none;}
+.log .setting{display:none;}
+.show-error .error{display: block;}
+.show-status .status{display: block;}
+.show-setting .setting{display: block;}
+
+/* Log entry effects */
+
+.log p:not(.new_group) + p.new_group{margin-top: 0.8em;}
+
+.log .status span{color:white;}
+.log .error .msg{color:red;}
+.log .error .msg::before{content: "⚠️ ";}
+
+.log ::after{padding-left: 7px;}
+.log .is_validated::after{content: "✅";}
+.log .is_retrying::after{content: "⏳";}
+.log .is_failed::after{content: "❌";}
