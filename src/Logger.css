@@ -12,6 +12,9 @@
 	font-weight: 400;
 	box-sizing: border-box;
 	background-color: rgba(0,0,0,0.03);
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
 }
 
 /* Individual messages */
