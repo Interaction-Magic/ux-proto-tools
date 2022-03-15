@@ -4,7 +4,7 @@
 /* Log panel itself */
 
 .log{
-	padding: 10px;
+	padding: 10px 5px;
 	overflow: hidden scroll;
 	height: 100%;
 	font-family: "IBM Plex Mono", monospace;
@@ -22,15 +22,15 @@
 	line-height: 21px;
 	white-space: nowrap;
 	cursor: default;
+	display: inline-block;
+	padding:0 5px;
 }
 
-/* Whole panel hover effect */
+/* Hover effects */
 
 .log .time{opacity: 0.5;}
-
-.log.log_hover_effect:hover p{opacity: 0.5;}
-.log.log_hover_effect:hover .time{opacity: 1;}
-.log.log_hover_effect p:hover{opacity: 1;}
+.log.log_hover_effect p:hover .time{opacity: 1;}
+.log.log_hover_effect p:hover{background:rgba(248, 255, 36, 0.54);}
 
 /* Show / hide toggles */
 
