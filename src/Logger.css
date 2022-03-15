@@ -40,9 +40,9 @@
 .log .error{display:none;}
 .log .status{display:none;}
 .log .setting{display:none;}
-.show-error .error{display: block;}
-.show-status .status{display: block;}
-.show-setting .setting{display: block;}
+.show-error .error{display: inline-block;}
+.show-status .status{display: inline-block;}
+.show-setting .setting{display: inline-block;}
 
 /* Log entry effects */
 
