@@ -36,6 +36,7 @@
 //    connect()	
 //    disconnect()
 //    send("msg_here")
+//    sendBytes([255,0,235])
 //    getBattery()
 //    isConnected()   // Returns true/false for status
 // 
@@ -161,6 +162,15 @@ class BTConnector{
 					value_arr[i] = msg[i].charCodeAt(0);
 			}
 			this._sendNextChunk(value_arr);
+		}
+	};
+
+	// Send a new message via UART
+	// @byte_Array : Uint8Array() array of bytes to send
+	sendBytes = (byte_Array) => {
+		if(this.bleDevice && this.bleDevice.gatt.connected) {
+			console.log(`send: [${byte_Array}]`);
+			this._sendNextChunk(byte_Array);
 		}
 	};
 
