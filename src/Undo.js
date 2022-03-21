@@ -28,7 +28,8 @@
 //  retrieve() -> returns the obj from the current position
 //  overwrite() -> update data in current position without creating a new history entry
 //  has_undo -> returns an obj with possibility for undo right now, e.g: {undo: true, undoundo: false}
-// 
+//  reset_storage() -> clears localStorage contents
+//
 //  Public properties:
 // 
 //  has_retrieved_from_storage -> is set true if success pulling data out of localStorage
@@ -139,6 +140,12 @@ class Undo{
 			undo: (this._current_index>0) && (this._stack.length>0),
 			undoundo: (this._current_index < (this._stack.length-1)) && (this._stack.length>0)
 		};
+	}
+
+	// Deletes localStorage entries
+	reset_storage(){
+		localStorage.removeItem('undo_stack');
+		localStorage.removeItem('undo_stack_position');
 	}
 
 	// Updates the disabled class on the elements
