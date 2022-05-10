@@ -75,11 +75,15 @@ class Input{
 
 	// Call when there's a push/release down on the button
 	down(){
-		this.opts.dom.classList.add(this.opts.pressed_class);
+		if(this.opts.dom){
+			this.opts.dom.classList.add(this.opts.pressed_class);
+		}
 		this._press();
 	}
 	up(){
-		this.opts.dom.classList.remove(this.opts.pressed_class);
+		if(this.opts.dom){
+			this.opts.dom.classList.remove(this.opts.pressed_class);
+		}
 		this._release()
 	}
 
