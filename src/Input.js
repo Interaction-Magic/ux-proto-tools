@@ -95,7 +95,7 @@ class Input{
 
 	remove(){
 		this._removed = true;
-		
+
 		this.opts.dom.removeEventListener("mousedown", this._onMouseDown);
 		this.opts.dom.removeEventListener("mouseout", this._onMouseOut)
 		this.opts.dom.removeEventListener("mouseup", this._onMouseUp);
@@ -149,7 +149,7 @@ class Input{
 	}
 	_listener_keydown(e){
 		// Avoid repeat firing by checking if already pressed
-		if( (e.key == input.opts.key) && (!this._click.pressed) ){
+		if( (e.key == this.opts.key) && (!this._click.pressed) ){
 			this.down();
 		}
 	}
