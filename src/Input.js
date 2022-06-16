@@ -32,6 +32,7 @@
 //  These are designed for external triggers, e.g. from a Serial device sending commands
 //    down()	-> Call when button is pressed down
 //    up()		-> Call when button gets released
+//	   remove_handlers() -> Remove event handlers for this object
 // 
 //  ***********************************************
 
@@ -59,6 +60,8 @@ class Input{
 		half_double_press: 0,
 		pressed: false
 	};
+
+	_removed = false;
 
 	// Requires a reference to div to put the messages in
 	constructor(opts){
@@ -88,77 +91,104 @@ class Input{
 	}
 
 	// /////////////////////////////////////////////////////////////////
+	// Event handlers
+
+	remove(){
+		this._removed = true;
+		
+		this.opts.dom.removeEventListener("mousedown", this._onMouseDown);
+		this.opts.dom.removeEventListener("mouseout", this._onMouseOut)
+		this.opts.dom.removeEventListener("mouseup", this._onMouseUp);
+		document.removeEventListener('keydown', this._onKeyDown);
+		document.removeEventListener('keyup', this._onKeyUp);
+		document.removeEventListener('keydown', this._onKeyDownDiscrete);
+	}
 
 	_attach_handlers(){
 
+		// Save references for functions
+		// Advice from here: https://riptutorial.com/dom/example/1034/removing-event-listeners
+
+		this._onMouseDown = this._listener_mousedown.bind(this);
+		this._onMouseOut = this._listener_mouseout.bind(this);
+		this._onMouseUp = this._listener_mouseup.bind(this);
+		this._onKeyDown = this._listener_keydown.bind(this);
+		this._onKeyUp = this._listener_keyup.bind(this);
+		this._onKeyDownDiscrete = this._listener_keydown_discrete.bind(this);
+
 		// Attach handlers to object on screen
 		if(this.opts.dom){
-			this.opts.dom.addEventListener("mousedown",() => {
-				this.down();
-			});
-
-			this.opts.dom.addEventListener("mouseout",() => {
-				this.opts.dom.classList.remove(this.opts.pressed_class);
-				this._release(false);
-				this.opts.dom.blur();
-			})
-
-			this.opts.dom.addEventListener("mouseup",() => {
-				this.up();
-				this.opts.dom.blur();
-			});
+			this.opts.dom.addEventListener("mousedown",this._onMouseDown);
+			this.opts.dom.addEventListener("mouseout",this._onMouseOut)
+			this.opts.dom.addEventListener("mouseup",this._onMouseUp);
 		}
 
 		// Attach handlers to main key
 		if(this.opts.key){
-			document.addEventListener('keydown', (e) => {
-				// Avoid repeat firing by checking if already pressed
-				if( (e.key == this.opts.key) && (!this._click.pressed) ){
-					this.down();
-				}
-			});
-			document.addEventListener('keyup', (e) => {
-				if(e.key == this.opts.key){
-					this.up();
-				}
-			});
+			document.addEventListener('keydown', this._onKeyDown);
+			document.addEventListener('keyup', this._onKeyUp);
 		}
 
 		// Setup detection for keyboard inputs for hardware  prototyping
 		if(this.opts.discrete_keys){
-			const keys = this.opts.discrete_keys;
-			document.addEventListener('keydown', (e) => {
-				const key = e.key.toLowerCase();
+			document.addEventListener('keydown', this._onKeyDownDiscrete);
+		}
+	}
 
-				switch(key){
-					case keys.single:
-						this._handle_press("single");
-						if(this.opts.discrete_keys_animate){
-							this.opts.dom.classList.add(this.opts.pressed_class);
-							setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 100);
-						}
-						break;
-					
-					case keys.double:
-						this._handle_press("double");
-						if(this.opts.discrete_keys_animate){
-							this.opts.dom.classList.add(this.opts.pressed_class);
-							setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 100);
-							setTimeout(() => {this.opts.dom.classList.add(this.opts.pressed_class);}, 170);
-							setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 270);
-						}
-						break;
-					
-					case keys.long:
-						this._handle_press("long");
-						if(this.opts.discrete_keys_animate){
-							this.opts.dom.classList.add(this.opts.pressed_class);
-							setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 300);
-						}
-						break;
+	_listener_mousedown(e){
+		this.down();
+	}
+	_listener_mouseout(e){
+		this.opts.dom.classList.remove(this.opts.pressed_class);
+		this._release(false);
+		this.opts.dom.blur();
+	}
+	_listener_mouseup(e){
+		this.up();
+		this.opts.dom.blur();
+	}
+	_listener_keydown(e){
+		// Avoid repeat firing by checking if already pressed
+		if( (e.key == input.opts.key) && (!this._click.pressed) ){
+			this.down();
+		}
+	}
+	_listener_keyup(e){
+		if(e.key == this.opts.key){
+			this.up();
+		}
+	}
+	_listener_keydown_discrete(e){
+
+		const key = e.key.toLowerCase();
+		const keys = this.opts.discrete_keys;
+
+		switch(key){
+			case keys.single:
+				this._handle_press("single");
+				if(this.opts.discrete_keys_animate){
+					this.opts.dom.classList.add(this.opts.pressed_class);
+					setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 100);
 				}
-
-			});
+				break;
+			
+			case keys.double:
+				this._handle_press("double");
+				if(this.opts.discrete_keys_animate){
+					this.opts.dom.classList.add(this.opts.pressed_class);
+					setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 100);
+					setTimeout(() => {this.opts.dom.classList.add(this.opts.pressed_class);}, 170);
+					setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 270);
+				}
+				break;
+			
+			case keys.long:
+				this._handle_press("long");
+				if(this.opts.discrete_keys_animate){
+					this.opts.dom.classList.add(this.opts.pressed_class);
+					setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 300);
+				}
+				break;
 		}
 	}
 
@@ -207,7 +237,9 @@ class Input{
 		}
 
 		// Go again
-		window.requestAnimationFrame(() => this._press_check_loop());
+		if(!this._removed){
+			window.requestAnimationFrame(() => this._press_check_loop());
+		}
 	}
 
 	// Call when the press is released on the input
