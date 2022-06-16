@@ -96,9 +96,11 @@ class Input{
 	remove(){
 		this._removed = true;
 
-		this.opts.dom.removeEventListener("mousedown", this._onMouseDown);
-		this.opts.dom.removeEventListener("mouseout", this._onMouseOut)
-		this.opts.dom.removeEventListener("mouseup", this._onMouseUp);
+		if(this.opts.dom){
+			this.opts.dom.removeEventListener("mousedown", this._onMouseDown);
+			this.opts.dom.removeEventListener("mouseout", this._onMouseOut)
+			this.opts.dom.removeEventListener("mouseup", this._onMouseUp);
+		}
 		document.removeEventListener('keydown', this._onKeyDown);
 		document.removeEventListener('keyup', this._onKeyUp);
 		document.removeEventListener('keydown', this._onKeyDownDiscrete);
