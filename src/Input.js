@@ -15,24 +15,25 @@
 //  Usage:
 // 
 //  const input = new Input({
-//		name: "Button1",			// Human readable name
-//		key: "q",					// Keyboard key to check for all press types on
-//		has_double_press: true,	// Enable check for double press
-//		dom: null,					// DOM element (e.g. <a>) representing the button
-//    discrete_keys: {			// Individual trigger keys e.g. for hardware keyboard emulators
-//    	single: 'e',
-//    	double: 'r',
-//    	long: 't'
+//    name: "Button1",        // Human readable name
+//    key: "q",               // Keyboard key to check for all press types on
+//    has_double_press: true, // Enable check for double press
+//    dom: null,              // DOM element (e.g. <a>) representing the button
+//    discrete_keys: {        // Individual trigger keys e.g. for hardware keyboard emulators
+//       single: 'e',
+//       double: 'r',
+//       long: 't'
 //    },
-//		fire: (press) => console.log(press)	// Callback for when button is pressed
-//	 });
+//    fire: (press) => console.log(press)	// Callback for when button is pressed
+//  });
 // 
 //  Public methods:
 // 
 //  These are designed for external triggers, e.g. from a Serial device sending commands
-//    down()	-> Call when button is pressed down
-//    up()		-> Call when button gets released
-//	   remove_handlers() -> Remove event handlers for this object
+//    down()   -> Call when button is pressed down
+//    up()     -> Call when button gets released
+//    fire()   -> Manually fire the button handler
+//    remove_handlers() -> Remove event handlers for this object
 // 
 //  ***********************************************
 
@@ -74,6 +75,11 @@ class Input{
 
 		// Start checking for button presses!
 		window.requestAnimationFrame(() => this._press_check_loop());
+	}
+
+	// Manually trigger the button push
+	fire(type){
+		_handle_press(type);
 	}
 
 	// Call when there's a push/release down on the button
