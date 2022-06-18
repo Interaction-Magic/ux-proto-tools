@@ -79,7 +79,7 @@ class Input{
 
 	// Manually trigger the button push
 	fire(type){
-		_handle_press(type);
+		this._handle_press(type);
 	}
 
 	// Call when there's a push/release down on the button
