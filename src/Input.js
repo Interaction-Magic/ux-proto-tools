@@ -17,7 +17,7 @@
 //  const input = new Input({
 //    name: "Button1",        // Human readable name
 //    key: "q",               // Keyboard key to check for all press types on
-//    has_double_press: true, // Enable check for double press
+//    double_press_enabled: true, // Enable check for double press
 //    dom: null,              // DOM element (e.g. <a>) representing the button
 //    discrete_keys: {        // Individual trigger keys e.g. for hardware keyboard emulators
 //       single: 'e',
@@ -28,12 +28,20 @@
 //  });
 // 
 //  Public methods:
-// 
-//  These are designed for external triggers, e.g. from a Serial device sending commands
-//    down()   -> Call when button is pressed down
-//    up()     -> Call when button gets released
+//
+//    down()   -> Call when button is pressed down (e.g. from a Serial device sending commands)
+//    up()     -> Call when button gets released (e.g. from a Serial device sending commands)
 //    fire()   -> Manually fire the button handler
 //    remove_handlers() -> Remove event handlers for this object
+//    
+//  Methods to enable/disable features
+//    enable_long_press()
+//    disable_long_press()
+//    set_long_press(is_long_press)
+//    enable_repeat()
+//    disable_repeat()
+//    set_repeat_press(is_repeat_press)
+//
 // 
 //  ***********************************************
 
@@ -46,12 +54,20 @@ class Input{
 		
 		has_double_press:			true,
 
+		long_press_enabled:		true,
       long_press_threshold: 	500,
-		double_press_threshold: 100,	// gap between end of first click and start of next
+
+		double_press_enabled:	true,
+		double_press_threshold: 100,			// gap between end of first click and start of next
 		
 		pressed_class: 			'pressed',
-		discrete_keys_animate: 	true			// flash a press effect on DOM button for discrete keys?
-	
+		discrete_keys_animate: 	true,			// flash a press effect on DOM button for discrete keys?
+
+		repeat_press_enabled:	false,
+		repeat_fire_immediate:	true,			// Does the first fire of the repeat begin on keydown
+		repeat_override_long:	true,			// Does the repeat key prevent the long press firing 
+		repeat_init_delay:		600,			// Delay before repeat timer begins
+		repeat_interval:			130			// Interval delay on repeat key
 	};
 
 	_click = {
@@ -64,11 +80,18 @@ class Input{
 
 	_removed = false;
 
+	_repeat_timer = null;
+
 	// Requires a reference to div to put the messages in
 	constructor(opts){
 
 		// Merge opts with defaults
 		this.opts = {...this._default_opts, ...opts};
+
+		// Backwards compatability with old variable name
+		if(typeof opts.has_double_press !== 'undefined'){
+			this.opts.double_press_enabled = opts.has_double_press;
+		}
 
 		// Attach click handling
 		this._attach_handlers();
@@ -88,12 +111,36 @@ class Input{
 			this.opts.dom.classList.add(this.opts.pressed_class);
 		}
 		this._press();
+		if(this.opts.repeat_enabled){
+			if(this.opts.repeat_fire_immediate){
+				// Fire straight away, which normally makes sense for repeat firing
+				this._handle_press('single');
+			}
+			this._repeat_timer = setTimeout(() => {
+				this._handle_repeat();
+			}, this.opts.repeat_init_delay)
+		}
 	}
 	up(){
 		if(this.opts.dom){
 			this.opts.dom.classList.remove(this.opts.pressed_class);
 		}
-		this._release()
+		this._release();
+		clearTimeout(this._repeat_timer);
+	}
+
+	// Enable/disable long press
+	enable_long_press(){ this.set_long_press(true); }
+	disable_long_press(){ this.set_long_press(false); }
+	set_long_press(is_long_press = false){
+		this.opts.long_press_enabled = is_long_press;
+	}
+
+	// Enable/disable repeat key firing
+	enable_repeat(){ this.set_repeat_press(true); }
+	disable_repeat(){ this.set_repeat_press(false); }
+	set_repeat_press(is_repeat_press = false){
+		this.opts.repeat_enabled = is_repeat_press;
 	}
 
 	// /////////////////////////////////////////////////////////////////
@@ -174,7 +221,7 @@ class Input{
 		switch(key){
 			case keys.single:
 				this._handle_press("single");
-				if(this.opts.discrete_keys_animate){
+				if(this.opts.dom && this.opts.discrete_keys_animate){
 					this.opts.dom.classList.add(this.opts.pressed_class);
 					setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 100);
 				}
@@ -182,7 +229,7 @@ class Input{
 			
 			case keys.double:
 				this._handle_press("double");
-				if(this.opts.discrete_keys_animate){
+				if(this.opts.dom && this.opts.discrete_keys_animate){
 					this.opts.dom.classList.add(this.opts.pressed_class);
 					setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 100);
 					setTimeout(() => {this.opts.dom.classList.add(this.opts.pressed_class);}, 170);
@@ -192,7 +239,7 @@ class Input{
 			
 			case keys.long:
 				this._handle_press("long");
-				if(this.opts.discrete_keys_animate){
+				if(this.opts.dom && this.opts.discrete_keys_animate){
 					this.opts.dom.classList.add(this.opts.pressed_class);
 					setTimeout(() => {this.opts.dom.classList.remove(this.opts.pressed_class);}, 300);
 				}
@@ -203,6 +250,12 @@ class Input{
 	// Handle all button activations
 	_handle_press(type){
 		this.opts.fire(type);
+	}
+
+	// Responds to repeat press firing
+	_handle_repeat(){
+		this._handle_press('single');
+		this._repeat_timer = setTimeout(() => this._handle_repeat(), this.opts.repeat_interval);
 	}
 
 	// /////////////////////////////////////////////////////////////////
@@ -219,7 +272,7 @@ class Input{
 	_press_check_loop(){
 		// Check if we should give up waiting for a second press of the double press
 		// Only do this if we are not currently pressed
-		if(!this._click.pressed && this.opts.has_double_press){
+		if(!this._click.pressed && this.opts.double_press_enabled){
 			if(
 				this._click.half_double_press_fired
 				&& (Date.now() > (this._click.half_double_press + this.opts.double_press_threshold))
@@ -237,10 +290,13 @@ class Input{
 		if(
 			this._click.pressed
 			&& (Date.now() > this._click.last_press + this.opts.long_press_threshold)
-			&& !this._click.long_press_fired
+			&& !this._click.long_press_fired && this.opts.long_press_enabled
 		){
 			// Long press threshold exceeded
-			this._handle_press("long");
+			if(!(this.opts.repeat_enabled && this.opts.repeat_override_long)){
+				// Fire except when repeat is enabled and we are overriding the long press with it.
+				this._handle_press("long");
+			}
 			this._click.long_press_fired = true;
 		}
 
@@ -255,16 +311,16 @@ class Input{
 		this._click.pressed = false;
 
 		if(do_checks){
-			if(!this.opts.has_double_press){
+			if(!this.opts.double_press_enabled){
 			
-				if(!this._click.long_press_fired){
+				if(!this._click.long_press_fired && !(this.opts.repeat_enabled && this.opts.repeat_fire_immediate)){
 					// Just fire a single press!
 					this._handle_press("single");
 				}
 	
 			}else{	
 				// If we haven't fired the longpress already
-				if(!this._click.long_press_fired){
+				if(!this._click.long_press_enabled || (this._click.long_press_enabled && !this._click.long_press_fired)){
 					if(this._click.half_double_press_fired){
 						// Fire a double click
 						this._handle_press("double");
