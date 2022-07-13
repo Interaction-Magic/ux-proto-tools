@@ -16,7 +16,8 @@
 //  const logger = new Logger({
 //    container: document.querySelector(".log-container"), // Container for the log
 //    filters_container: document.querySelector(".filters"),
-//    filters: ['error']  // Filters to apply from the start
+//    filters: ['error'],  // Filters to apply from the start
+//    time_mode: 'clock',  // Display mode for time, can be 'clock', 'incremental' or 'timestamp'  
 //  });
 //  logger.log("Logging begun");
 //
@@ -55,7 +56,8 @@
 class Logger{
 
 	_default_opts = {
-		filters: []
+		filters: [],
+		time_mode: 'clock'
 	};
 
 	_default_msg_opts = {
@@ -68,6 +70,9 @@ class Logger{
 		if(!this.opts.container){
 			console.warn("No container for log specified");
 		}
+
+		this.start_time = Date.now();
+		this.opts.container.dataset.start_time = this.start_time;
 
 		// Add starting filters
 		for(let f of this.opts.filters){
@@ -112,13 +117,40 @@ class Logger{
 		// Generate new message
 		const new_msg = document.createElement('p');
 
+		// Add data properties to the log entry
+		for(const d in opts.data){
+			new_msg.dataset[d] = opts.data[d];
+		}
+		new_msg.dataset.timestamp = opts.time.getTime();
+		new_msg.dataset.time_diff = opts.time.getTime() - this.start_time;
+
 		// Which char to show as
 		const char = opts.char ?? this.opts.char;
 
+		// Generate time string
+		let time_string = "";
+		switch(this.opts.time_mode){
+			case 'incremental':
+				// 01:23
+				const seconds = Math.floor((opts.time.getTime() - this.start_time)/1000) % 60;
+				const minutes = Math.floor((opts.time.getTime() - this.start_time)/60000) % 60;
+				time_string = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+				break;
+			case 'timestamp':
+				// 32913
+				time_string = (opts.time.getTime() - this.start_time);
+				break;
+			case 'clock':
+			default:
+				// 11:02:23
+				time_string = opts.time.toTimeString().substr(0,8);
+				break;
+
+		}
 		// Format message
 		new_msg.innerHTML = `
 			<span class="time" title="${opts.time.toTimeString()}">
-				${opts.time.toTimeString().substr(0,8)}
+				${time_string}
 			</span>
 			<span class="char">
 				${char}
@@ -130,10 +162,6 @@ class Logger{
 		// Set class of the <p>
 		if(opts.class)	new_msg.classList.add(opts.class);
 
-		// Add data properties to the log entry
-		for(const d in opts.data){
-			new_msg.dataset[d] = opts.data[d];
-		}
 
 		// See if we are already at the bottom, better for UI if user is looking at something higher up
 		const will_scroll = this._is_scrolled_bottom();
