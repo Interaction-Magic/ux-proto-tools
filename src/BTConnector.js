@@ -13,11 +13,14 @@
 //  ***********************************************
 // 
 //  Usage:
-//  All options are optional
+//  All options are optional, but setting a namePrefix is highly recommended
 //
 //  const BT = new BTConnector({
 //    namePrefix: "Interaction Magic",  // Filter for devices with this name
 //  	onReceive: (msg) => {
+//			console.log(msg);
+//  	},
+//  	onSend: (msg) => {
 //			console.log(msg);
 //  	},
 //  	onDisconnect: () => {
@@ -63,6 +66,7 @@ class BTConnector{
 		namePrefix: "Interaction Magic",
 		onBatteryChange: (event) => { console.log(`Battery: ${event.target.value.getUint8(0)}%`); },
 		onReceive: (msg) => { console.log(`Received: ${msg}`); },
+		onSend: (msg) => { console.log(`Sent: ${msg}`); },
 		onDisconnect: () => {},
 		onStatusChange: (msg) => { console.log(msg); },
 
@@ -81,7 +85,7 @@ class BTConnector{
 
 		// Check if BT is possible in this browser
 		if (!navigator.bluetooth) {
-			console.log(`WebBluetooth API is not available.\r\nPlease make sure the Web Bluetooth flag is enabled.`);
+			this._options.onStatusChange(`WebBluetooth API is not available.\r\nPlease make sure the Web Bluetooth flag is enabled.`);
 			return;
 		}
 		this._options.onStatusChange('Requesting Bluetooth Device...');
@@ -158,7 +162,7 @@ class BTConnector{
 	// @msg : String to send 
 	send = (msg) => {
 		if(this.bleDevice && this.bleDevice.gatt.connected) {
-			console.log("send: " + msg);
+			this._options.onSend(msg);
 			let value_arr = new Uint8Array(msg.length)
 			for (let i = 0; i < msg.length; i++) {
 					value_arr[i] = msg[i].charCodeAt(0);
@@ -171,7 +175,7 @@ class BTConnector{
 	// @byte_Array : Uint8Array() array of bytes to send
 	sendBytes = (byte_Array) => {
 		if(this.bleDevice && this.bleDevice.gatt.connected) {
-			console.log(`send: [${byte_Array}]`);
+			this._options.onSend(byte_Array);
 			this._sendNextChunk(byte_Array);
 		}
 	};
