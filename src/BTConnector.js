@@ -42,6 +42,7 @@
 //    sendBytes([255,0,235])
 //    getBattery()
 //    isConnected()   // Returns true/false for status
+//    getDeviceName() // Returns BLE device is connected to, or false if not connected 
 // 
 //  ***********************************************
 
@@ -151,6 +152,11 @@ class BTConnector{
 
 	getBattery = () => {
 		return this.batteryCharacteristic.readValue();
+	}
+
+	// Returns the name of a connected device
+	getDeviceName = () => {
+		return this.isConnected() ? this.bleDevice.name : false;
 	}
 
 	// Returns true/false if connected to BT device
