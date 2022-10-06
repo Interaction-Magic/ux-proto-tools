@@ -50,9 +50,6 @@ class BTConnector{
 	ble_NUS_Service_UUID  = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 	ble_NUS_CharRX_UUID   = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 	ble_NUS_CharTX_UUID   = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
-
-	// Message send chunk size
-	msg_send_chunk_size = 20;
 	
 	// Variables to handle services, servers etc...
 	bleDevice;
@@ -67,8 +64,13 @@ class BTConnector{
 		onBatteryChange: (event) => { console.log(`Battery: ${event.target.value.getUint8(0)}%`); },
 		onReceive: (msg) => { console.log(`Received: ${msg}`); },
 		onDisconnect: () => {},
-		onStatusChange: (msg) => { console.log(msg); }
+		onStatusChange: (msg) => { console.log(msg); },
+
+		msg_send_chunk_size: 20 // Message send chunk size
 	};
+
+	// Storage for messages to send in queue
+	_msg_send_queue = [];
 
 	// Constructor, to merge in the options
 	constructor(options){
@@ -206,15 +208,28 @@ class BTConnector{
 		return characteristic;
 	}
 
-	// Called recursively to send the next chunk from
-	// We do this to avoid sending too much data at once
+	// We do two things here:
+	//  1) Call this recursively in chunks equal to msg_send_chunk_size to avoid sending too much data at once
+	//  2) Queue messages which fail and send afterwards,
+	//     as otherwise we get an Exception "GATT operation already in progress" when calling too fast
+	//
 	// Pass in array of char codes to write to the BT device
 	_sendNextChunk = async (value_array) => {
-		let chunk = value_array.slice(0, this.msg_send_chunk_size);
-		await this.rxCharacteristic.writeValue(chunk);
-		if(value_array.length > this.msg_send_chunk_size){
-			this._sendNextChunk(value_array.slice(this.msg_send_chunk_size));
+
+		let chunk = value_array.slice(0, this._options.msg_send_chunk_size);
+
+		try{
+			// This promise will fail if we are currently writing to BT characteristic
+			await this.rxCharacteristic.writeValue(chunk);
+			if(value_array.length > this._options.msg_send_chunk_size){
+				this._sendNextChunk(value_array.slice(this._options.msg_send_chunk_size));
+			}else if(this._msg_send_queue.length > 0){
+				this._sendNextChunk(this._msg_send_queue.shift());
+			}
+		}catch{
+			this._msg_send_queue.push(value_array);
 		}
+
 	};
 
 	// Fire callback for a status change
