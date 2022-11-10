@@ -17,6 +17,7 @@
 //
 //  const BT = new BTConnector({
 //    namePrefix: "Interaction Magic",  // Filter for devices with this name
+//    services: ['uart', 'battery'],    // Set to match services your device will broadcast
 //  	onReceive: (msg) => {
 //			console.log(msg);
 //  	},
@@ -71,6 +72,8 @@ class BTConnector{
 		onDisconnect: () => {},
 		onStatusChange: (msg) => { console.log(msg); },
 
+		services: ['uart', 'battery'],
+
 		msg_send_chunk_size: 20 // Message send chunk size
 	};
 
@@ -107,21 +110,21 @@ class BTConnector{
 			this.bleDevice.addEventListener('gattserverdisconnected', this._options.onDisconnect);
 			this.bleServer = await this.bleDevice.gatt.connect();
 
-			// Request characteristics we want from the services
-			this.rxCharacteristic = await this._getCharacteristic(this.ble_NUS_Service_UUID, this.ble_NUS_CharRX_UUID);
-			this.txCharacteristic = await this._getCharacteristic(this.ble_NUS_Service_UUID, this.ble_NUS_CharTX_UUID);
-			await this.txCharacteristic.startNotifications();
-			this.txCharacteristic.addEventListener('characteristicvaluechanged', this._receive);
+			// Request UART characteristics and add change handlers
+			if(this._options.services.includes('uart')){
+				this.rxCharacteristic = await this._getCharacteristic(this.ble_NUS_Service_UUID, this.ble_NUS_CharRX_UUID);
+				this.txCharacteristic = await this._getCharacteristic(this.ble_NUS_Service_UUID, this.ble_NUS_CharTX_UUID);
+				await this.txCharacteristic.startNotifications();
+				this.txCharacteristic.addEventListener('characteristicvaluechanged', this._receive);
+			}
 
-			this.batteryCharacteristic = await this._getCharacteristic('battery_service', 'battery_level');
+			// Request battery characteristics and add change handlers
+			if(this._options.services.includes('battery')){
+				this.batteryCharacteristic = await this._getCharacteristic('battery_service', 'battery_level');
+				await this.batteryCharacteristic.startNotifications();
+				this.batteryCharacteristic.addEventListener('characteristicvaluechanged', this._options.onBatteryChange);
+			}
 
-			// Add handler for battery characteristic
-			await this.batteryCharacteristic.startNotifications();
-			this.batteryCharacteristic.addEventListener('characteristicvaluechanged', this._options.onBatteryChange);
-
-			await this.txCharacteristic.startNotifications();
-
-			this.txCharacteristic.addEventListener('characteristicvaluechanged', this._receive);
 			this._statusChange(`Connected to: ${this.bleDevice.name}`);
 
 			return this.bleDevice.name;
