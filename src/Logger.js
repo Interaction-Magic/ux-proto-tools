@@ -149,15 +149,9 @@ class Logger{
 		}
 		// Format message
 		new_msg.innerHTML = `
-			<span class="time" title="${opts.time.toTimeString()}">
-				${time_string}
-			</span>
-			<span class="char">
-				${char}
-			</span>
-			<span class="msg" style="${(opts.colour) ? 'color:'+opts.colour : ''}" title="${opts.hover ?? ''}">
-				${msg}
-			</span>`;
+			<span class="time" title="${opts.time.toTimeString()}">${time_string}</span>
+			<span class="char">${char}</span>
+			<span class="msg" style="${(opts.colour) ? 'color:'+opts.colour : ''}" title="${opts.hover ?? ''}">${msg}</span>`;
 
 		// Set class of the <p>
 		if(opts.class)	new_msg.classList.add(opts.class);
