@@ -23,7 +23,7 @@
 // 
 //  Initialise as shown:
 //
-//  const MQTT = new MQTT({
+//  const MQTT = new WebMQTT({
 //    server:       'server.s2.eu.hivemq.cloud',	// MQTT server
 //    username:     'username',							// MQTT username
 //    password:     '*****',								// MQTT password
