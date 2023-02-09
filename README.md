@@ -17,6 +17,7 @@ Comments or questions: hello@interactionmagic.com
 | [`Serial.js`](https://lib.interactionmagic.com/src/Serial.js) | Connect to and read/write data over serial with WebUSB |
 | [`Logger.js`](https://lib.interactionmagic.com/src/Logger.js) | Creates a simple logging panel on the page. Include the [`Logger.css`](https://lib.interactionmagic.com/src/Logger.css) as well. |
 | [`BTConnector.js`](https://lib.interactionmagic.com/src/BTConnector.js) | Sets up WebBluetooth connection with TX/RX to nRF52840 |
+| [`WebMQTT.js`](https://lib.interactionmagic.com/src/WebMQTT.js) | Wrapper around Paho MQTT client for easy messaging |
 
 ## How to include
 
