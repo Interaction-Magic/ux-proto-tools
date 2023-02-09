@@ -9,6 +9,7 @@
 //  
 //  Simple browser-based connection to/from MQTT broker
 //  Wrapper for the Paho MQTT library with some niceities to make it easy to setup multiple instances
+//  Includes using Hello & Ping functionality built in
 //
 //  https://www.eclipse.org/paho/index.php?page=clients/js/index.php
 // 
@@ -35,7 +36,7 @@
 //    topic_prefix: 'interactionmagic/proto1',    	// Global topic prefix, ⚠️ no trailing slash!
 //
 //    subscribe_to: ['topic1', 'topic2'],				// List of topics to auto-subscribe to
-//    do_not_connect_yet: false,							// Set true to create object without connecting
+//    connect_straight_away: true,						// Set false to create object without connecting
 //  
 //    log: (msg, opts = {}) => {}, 						// Common handler for log messages
 //  
@@ -46,11 +47,13 @@
 //    onSubscribe: (topic) => {},
 //    onSend: (topic, msg) => {},
 //    onMessageDelivered: (msg) => {},
+//    onPing: (device) => {},
 //    
 //    status_topic: 'status',								// Topic for status messages, set false to disable
 //    status_init_topic: 'hello',						// Set false to disable
 //    status_ping_topic: 'ping',							// Set false to disable
 //    status_ping_interval: 1000,						// Adjust ping interval
+//    subscribe_to_pings: true,							// Turn off ping subscription
 //  })
 //
 //  Public methods:
@@ -71,12 +74,14 @@ class WebMQTT{
 		topic_prefix: 	'', // No trailing slash!
 
 		subscribe_to: [],
-		do_not_connect_yet: false,
+		connect_straight_away: true,
 
 		status_topic: 'status',
 		status_init_topic: 'hello',
 		status_ping_topic: 'ping',
 		status_ping_interval: 1000,
+
+		subscribe_to_pings: true,
 
 		log: (msg, type = 'MQTT') => {console.log(`${type}: ${msg}`)},
 
@@ -86,12 +91,12 @@ class WebMQTT{
 		onReceive: (msg_data) => {this.log(`Received: ${msg_data.topic} = ${msg_data.payload}`, 'msg')},
 		onSubscribe: (topic) => {this.log(`Subscribed to: ${topic}`, 'topic')},
 		onSend: (topic, msg) => {this.log(`Sent: ${msg} to ${topic}`, 'msg')},
-		onMessageDelivered: (msg) => {this.log(`Delivered: ${msg.payloadString} to ${msg.destinationName}`, 'msg')}
+		onMessageDelivered: (msg) => {this.log(`Delivered: ${msg.payloadString} to ${msg.destinationName}`, 'msg')},
+		onPing: (device) => {this.log(`Ping from: ${device}`, 'ping')}
 	}
 
 
 	constructor(opts) {
-
 
 		// Merge opts with defaults
 		this.opts = {...this._default_opts, ...opts}
@@ -134,17 +139,21 @@ class WebMQTT{
 		this.client.onMessageArrived = (msg) => {
 			const topic = msg.destinationName.substring(this.opts.topic_prefix.length+1);
 
-			this.opts.onReceive({
-				topic: topic,
-				payload: msg.payloadString,
-
-				topic_full: msg.destinationName,
-				msg_raw: msg
-			})
+			if(this._isStatusEnabled('ping') && (topic == `${this.opts.status_topic}/${this.opts.status_ping_topic}`)){
+				this.opts.onPing(msg.payloadString)
+			}else{
+				this.opts.onReceive({
+					topic: topic,
+					payload: msg.payloadString,
+	
+					topic_full: msg.destinationName,
+					msg_raw: msg
+				})
+			}
 		}
 
 		// Now connect
-		if(!this.opts.do_not_connect_yet){
+		if(this.opts.connect_straight_away){
 			this.connect();
 		}
 	}
@@ -155,9 +164,16 @@ class WebMQTT{
 				this.opts.onConnect(this.opts.client_id);
 
 				// Automatically subscribe to topics after connecting
+
 				if(this.opts.status_topic){
-					// Subscribe to status channels
-					this.subscribe(`${this.opts.status_topic}/#`)
+					if(this._isStatusEnabled('init')){
+						// Subscribe to init/hello channel
+						this.subscribe(`${this.opts.status_topic}/${this.opts.status_init_topic}`)
+					}
+					if(this._isStatusEnabled('ping') && this.opts.subscribe_to_pings){
+						// Subscribe to ping channel
+						this.subscribe(`${this.opts.status_topic}/${this.opts.status_ping_topic}`)
+					}
 				}
 				if(this.opts.subscribe_to){
 					// Subscribe to topics initially set in options 
