@@ -3,7 +3,7 @@
 //  Logger
 // 
 //  Author: George Cave @ Interaction Magic
-//  Date: March 2022
+//  Date: February 2023
 // 
 //  ***********************************************
 //  
@@ -29,6 +29,7 @@
 //    <nav class="filters">
 //      <a href="#" class="filter-btn" data-filter="status">📡</a>
 //      <a href="#" class="filter-btn" data-filter="errors">⚠️</a>	
+//      <a href="#download" class="action-btn" data-type="txt" data-include-hidden="true" data-include-meta="false">📥</a>	
 //    </nav>
 //  </div>
 //
@@ -48,6 +49,8 @@
 //      "info": "special"
 //    }
 //  });
+//
+//  download_log(opts)    // Download a copy of the log
 //
 //
 
@@ -101,6 +104,29 @@ class Logger{
 					}
 				});
 			});
+
+			// Add handlers for actions
+			this.opts.filters_container.querySelectorAll(".action-btn").forEach(link => link.addEventListener("click", async (e) => {
+				e.preventDefault()
+				
+				// Get the hash, to work out what sort of switch it is
+				const url_target = link.href
+				if(!url_target) return
+				const hash = url_target.substring(url_target.indexOf('#') + 1)
+
+				// Different options
+				switch(hash){
+		
+					// Download dump of the log
+					case "download":
+						const opts = []
+						if(link.dataset.type) opts.type = link.dataset.type
+						if(link.dataset.includeHidden) opts.include_hidden = link.dataset.includeHidden == 'true'
+						if(link.dataset.includeMeta) opts.include_meta = link.dataset.includeMeta == 'true'
+						this.download_log(opts)
+						break
+				}
+			}))
 		}
 	}
 
@@ -179,5 +205,95 @@ class Logger{
 	_scroll_to_bottom(){
 		// Scroll to bottom
 		this.opts.container.scrollTop = this.opts.container.scrollHeight;
+	}
+
+	// /////////////////////////////////////////////////
+	// Log downloading 
+	download_log(opts = {}){
+
+		// Opts can be
+		opts = {...{
+			type: 'csv',
+			include_hidden: true,
+			include_meta: true,
+			filename_prefix: 'log_'
+		}, ...opts};
+
+		let data = [];
+
+		// Assemble rows to download
+		const p_rows = this.opts.container.querySelectorAll("p");
+		for(let row of p_rows){
+			const this_row = []
+
+			if((row.offsetHeight <= 0) && !opts.include_hidden){
+				// Skip row if hidden and we don't want to include hidden rows
+				continue
+			}
+
+			let msg = row.querySelector('.msg').textContent
+			if(opts.type == 'csv') msg = `"${msg.replaceAll('"', '""')}"`
+
+			// Add base data
+			this_row.push(
+				row.querySelector(".time").textContent,
+				row.querySelector(".char").textContent,
+				msg
+			)
+
+			// Include meta data
+			if(opts.include_meta){
+				this_row.push(
+					Array.from(row.classList).join(', '),
+					row.querySelector(".time").title,
+					row.dataset.timestamp,
+					row.dataset.time_diff
+				)
+
+				// Save dataset items too if we have them
+				for(let dataset_item in Object.assign({}, row.dataset)){
+					if((dataset_item == 'timestamp') || (dataset_item == 'time_diff')){
+						continue
+					}
+					this_row.push(`${dataset_item}: ${row.dataset[dataset_item]}`)
+				}	
+			}
+
+			// Save to array of rows
+			data.push(this_row)
+		}
+
+		// Create CSV
+		let filedata = ''
+		if(opts.type == 'csv'){
+			filedata += 'Time,Type,Message'
+			if(opts.include_hidden){
+				filedata += ',Class,Datetime,Timestamp,Time diff,Message data'
+			}
+			filedata += '\n'
+			data.forEach(row => filedata += `${row.join(',')}\n`)
+
+		}else if(opts.type == 'txt'){
+			data.forEach(row => filedata += `${row.join(' ')}\n`)
+		}else{
+			// Log error to self here!
+			this.log(`Download type not recognised: ${opts.type}`, {class: 'error'})
+			return
+		}
+
+		// Fix for # symbol breaking CSV files
+		filedata = encodeURI(filedata)
+		filedata = filedata.replaceAll('#', '%23')
+
+		// Create filename and link data
+		const filename = `${opts.filename_prefix}${Math.round(Date.now()/1000)}`
+		const filename_with_suffix = `${filename}.${opts.type == 'csv' ? 'csv' : 'txt'}`
+		const href = `data:text/${opts.type == 'csv' ? 'csv' : 'plain'};charset=utf-8,${filedata}`
+
+		// Generate log entry with the link embedded in it
+		this.log(`📥 Downloading log: <a class="${filename}" href="${href}" target="_blank" download="${filename_with_suffix}">${filename_with_suffix}</a>`)
+
+		// Then trigger the download with a click
+		document.querySelector(`.${filename}`).click()
 	}
 }
