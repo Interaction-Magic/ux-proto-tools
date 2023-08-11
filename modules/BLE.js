@@ -65,9 +65,11 @@ export default class{
 	
 	// Options object for this connection
 	options = {
-		onBatteryChange: (event) => { console.log(`Battery: ${event.target.value.getUint8(0)}%`) },
 		onReceive: (msg) => { console.log(`Received: ${msg}`) },
 		onSend: (msg) => { console.log(`Sending: ${msg}`) },
+		onError: (msg) => console.warn(`Error: ${msg}`),
+
+		onBatteryChange: (event) => { console.log(`Battery: ${event.target.value.getUint8(0)}%`) },
 		onDisconnect: () => {},
 		onStatusChange: (msg) => { console.log(msg) },
 
@@ -114,8 +116,8 @@ export default class{
 			// Now request access to a bluetooth device
 			this.bleDevice = await navigator.bluetooth.requestDevice(requestOpts)
 
-			this._statusChange('Found ' + this.bleDevice.name)
-			this._statusChange('Connecting to GATT Server...')
+			this.options.onStatusChange('Found ' + this.bleDevice.name)
+			this.options.onStatusChange('Connecting to GATT Server...')
 
 			this.bleDevice.addEventListener('gattserverdisconnected', this.options.onDisconnect)
 			this.bleServer = await this.bleDevice.gatt.connect()
@@ -139,12 +141,12 @@ export default class{
 				this.batteryCharacteristic.addEventListener('characteristicvaluechanged', this.options.onBatteryChange)
 			}
 
-			this._statusChange(`Connected to: ${this.bleDevice.name}`)
+			this.options.onStatusChange(`Connected to: ${this.bleDevice.name}`)
 
 			return this.bleDevice.name
 
 		}catch(error){
-			this._statusChange(`Error: ${error}`)
+			this.options.onError(error)
 			if(this.bleDevice && this.bleDevice.gatt.connected){
 				this.bleDevice.gatt.disconnect()
 			}
@@ -155,15 +157,15 @@ export default class{
 	// Will disconnect from a connected device
 	disconnect = () => {	
 		if (!this.bleDevice) {
-			this._statusChange('No Bluetooth Device connected')
+			this.options.onError('No Bluetooth Device connected')
 			return
 		}
-		this._statusChange('Disconnecting from Bluetooth Device...')
+		this.options.onStatusChange('Disconnecting from Bluetooth Device...')
 		if (this.bleDevice.gatt.connected) {
 			this.bleDevice.gatt.disconnect()
-			this._statusChange('Bluetooth Device connected: ' + this.bleDevice.gatt.connected)
+			this.options.onStatusChange('Bluetooth Device connected: ' + this.bleDevice.gatt.connected)
 		}else{
-			this._statusChange('Bluetooth Device is already disconnected')
+			this.options.onStatusChange('Bluetooth Device is already disconnected')
 		}
 	}
 
@@ -203,13 +205,13 @@ export default class{
 
 	_getCharacteristic = async (service_uuid, characterstic_uuid) => {
 
-		this._statusChange(`Locating service: ${service_uuid}`)
+		this.options.onStatusChange(`Locating service: ${service_uuid}`)
 		let service = await this.bleServer.getPrimaryService(service_uuid)
-		this._statusChange(`Found service: ${service_uuid}`)
+		this.options.onStatusChange(`Found service: ${service_uuid}`)
 		
-		this._statusChange(`Locating characteristic: ${characterstic_uuid}`)
+		this.options.onStatusChange(`Locating characteristic: ${characterstic_uuid}`)
 		let characteristic = await service.getCharacteristic(characterstic_uuid)
-		this._statusChange(`Found characteristic: ${characterstic_uuid}`)
+		this.options.onStatusChange(`Found characteristic: ${characterstic_uuid}`)
 
 		return characteristic
 	}
@@ -238,10 +240,5 @@ export default class{
 			this._msg_send_queue.push(value_array)
 		}
 
-	};
-
-	// Fire callback for a status change
-	_statusChange(msg){
-		this.options.onStatusChange(msg)
 	}
 }
