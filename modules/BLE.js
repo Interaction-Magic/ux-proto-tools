@@ -65,9 +65,6 @@ export default class{
 	
 	// Options object for this connection
 	options = {
-		filters: {
-      	namePrefix: "Interaction Magic"
-    	},
 		onBatteryChange: (event) => { console.log(`Battery: ${event.target.value.getUint8(0)}%`) },
 		onReceive: (msg) => { console.log(`Received: ${msg}`) },
 		onSend: (msg) => { console.log(`Sending: ${msg}`) },
@@ -101,11 +98,21 @@ export default class{
 
 		try{
 
-			this.bleDevice = await navigator.bluetooth.requestDevice({
-				filters: [this.options.filters],
-				optionalServices: [this.bleNUSServiceUUID, 'battery_service'],
-				// acceptAllDevices: true // <-- Uncomment this to view all BT devices
-			})
+			// Configure options for bluetooth device request
+			const requestOpts = {
+				optionalServices: []
+			}
+			if(this.options.filters){
+				requestOpts.filters = [this.options.filters]
+			}else{
+				requestOpts.acceptAllDevices = true
+			}
+			if(this.options.services.includes('uart')) requestOpts.optionalServices.push(this.bleNUSServiceUUID)
+			if(this.options.services.includes('battery')) requestOpts.optionalServices.push('battery_service')
+
+			console.log(requestOpts)
+			// Now request access to a bluetooth device
+			this.bleDevice = await navigator.bluetooth.requestDevice(requestOpts)
 
 			this._statusChange('Found ' + this.bleDevice.name)
 			this._statusChange('Connecting to GATT Server...')
