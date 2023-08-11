@@ -67,16 +67,13 @@ export default class{
 	options = {
 		onReceive: (msg) => { console.log(`Received: ${msg}`) },
 		onSend: (msg) => { console.log(`Sending: ${msg}`) },
+		onStatusChange: (msg) => { console.log(msg) },
 		onError: (msg) => console.warn(`Error: ${msg}`),
 
 		onBatteryChange: (event) => { console.log(`Battery: ${event.target.value.getUint8(0)}%`) },
 		onDisconnect: () => {},
-		onStatusChange: (msg) => { console.log(msg) },
 
 		services: ['uart'],
-		
-		// WebBluetooth error message
-		webBluetoothUnavailable: 'WebBluetooth API is not available in this browser.',
 
 		msg_send_chunk_size: 20 // Message send chunk size
 	}
@@ -93,10 +90,10 @@ export default class{
 
 		// Check if BT is possible in this browser
 		if (!navigator.bluetooth) {
-			this.options.onStatusChange(this.options.webBluetoothUnavailable)
-			return
+			this.options.onStatusChange('WebBluetooth API is not available in this browser')
+			return false
 		}
-		this.options.onStatusChange('Requesting Bluetooth Device...')
+		this.options.onStatusChange('Requesting bluetooth Device...')
 
 		try{
 
