@@ -72,7 +72,7 @@ export default class{
 		onDisconnect: () => {},
 		onStatusChange: (msg) => { console.log(msg) },
 
-		services: ['uart', 'battery'],
+		services: ['uart'],
 		
 		// WebBluetooth error message
 		webBluetoothUnavailable: 'WebBluetooth API is not available in this browser.',
