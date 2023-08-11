@@ -35,6 +35,7 @@ These versions will be the only ones that receive feature upgrades
 | Library | What does it do? |
 | --- | --- |
 | [`BLE.js`](https://lib.interactionmagic.com/modules/BLE.js) | Sets up WebBluetooth connection with TX/RX to nRF52840 |
+| [`Serial.js`](https://lib.interactionmagic.com/modules/Serial.js) | Connect to and read/write data over serial with WebUSB |
 
 ### How to include
 
