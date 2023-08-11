@@ -64,8 +64,10 @@ export default class{
 	batteryCharacteristic
 	
 	// Options object for this connection
-	_options = {
-		namePrefix: "Interaction Magic",
+	options = {
+		filters: {
+      	namePrefix: "Interaction Magic"
+    	},
 		onBatteryChange: (event) => { console.log(`Battery: ${event.target.value.getUint8(0)}%`) },
 		onReceive: (msg) => { console.log(`Received: ${msg}`) },
 		onSend: (msg) => { console.log(`Sending: ${msg}`) },
@@ -85,24 +87,22 @@ export default class{
 
 	// Constructor, to merge in the options
 	constructor(options){
-		this._options = {...this._options, ...options}
+		this.options = {...this.options, ...options}
 	}
 
 	connect = async () => {
 
 		// Check if BT is possible in this browser
 		if (!navigator.bluetooth) {
-			this._options.onStatusChange(this._options.webBluetoothUnavailable)
+			this.options.onStatusChange(this.options.webBluetoothUnavailable)
 			return
 		}
-		this._options.onStatusChange('Requesting Bluetooth Device...')
+		this.options.onStatusChange('Requesting Bluetooth Device...')
 
 		try{
 
 			this.bleDevice = await navigator.bluetooth.requestDevice({
-				filters: [{
-					namePrefix: [this._options.namePrefix]
-				}],
+				filters: [this.options.filters],
 				optionalServices: [this.bleNUSServiceUUID, 'battery_service'],
 				// acceptAllDevices: true // <-- Uncomment this to view all BT devices
 			})
@@ -110,26 +110,26 @@ export default class{
 			this._statusChange('Found ' + this.bleDevice.name)
 			this._statusChange('Connecting to GATT Server...')
 
-			this.bleDevice.addEventListener('gattserverdisconnected', this._options.onDisconnect)
+			this.bleDevice.addEventListener('gattserverdisconnected', this.options.onDisconnect)
 			this.bleServer = await this.bleDevice.gatt.connect()
 
 			// Request UART characteristics and add change handlers
-			if(this._options.services.includes('uart')){
+			if(this.options.services.includes('uart')){
 				this.rxCharacteristic = await this._getCharacteristic(this.bleNUSServiceUUID, this.bleNUSCharRxUUID)
 				this.txCharacteristic = await this._getCharacteristic(this.bleNUSServiceUUID, this.bleNUSCharTxUUID)
 				await this.txCharacteristic.startNotifications()
 				this.txCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
 					// Handle a received message from UART
 					const decoder = new TextDecoder()
-					this._options.onReceive(decoder.decode(event.target.value))
+					this.options.onReceive(decoder.decode(event.target.value))
 				})
 			}
 
 			// Request battery characteristics and add change handlers
-			if(this._options.services.includes('battery')){
+			if(this.options.services.includes('battery')){
 				this.batteryCharacteristic = await this._getCharacteristic('battery_service', 'battery_level')
 				await this.batteryCharacteristic.startNotifications()
-				this.batteryCharacteristic.addEventListener('characteristicvaluechanged', this._options.onBatteryChange)
+				this.batteryCharacteristic.addEventListener('characteristicvaluechanged', this.options.onBatteryChange)
 			}
 
 			this._statusChange(`Connected to: ${this.bleDevice.name}`)
@@ -178,7 +178,7 @@ export default class{
 	// @msg : String to send 
 	send = (msg) => {
 		if(this.bleDevice && this.bleDevice.gatt.connected) {
-			this._options.onSend(msg)
+			this.options.onSend(msg)
 			const encoder = new TextEncoder()
 			this._sendNextChunk(encoder.encode(msg))
 		}
@@ -188,7 +188,7 @@ export default class{
 	// @byte_Array : Uint8Array() array of bytes to send
 	sendBytes = (byteArray) => {
 		if(this.bleDevice && this.bleDevice.gatt.connected) {
-			this._options.onSend(byteArray);
+			this.options.onSend(byteArray);
 			this._sendNextChunk(byteArray);
 		}
 	}
@@ -217,13 +217,13 @@ export default class{
 	// Pass in array of char codes to write to the BT device
 	_sendNextChunk = async (value_array) => {
 
-		let chunk = value_array.slice(0, this._options.msg_send_chunk_size);
+		let chunk = value_array.slice(0, this.options.msg_send_chunk_size);
 
 		try{
 			// This promise will fail if we are currently writing to BT characteristic
 			await this.rxCharacteristic.writeValue(chunk);
-			if(value_array.length > this._options.msg_send_chunk_size){
-				this._sendNextChunk(value_array.slice(this._options.msg_send_chunk_size))
+			if(value_array.length > this.options.msg_send_chunk_size){
+				this._sendNextChunk(value_array.slice(this.options.msg_send_chunk_size))
 			}else if(this._msg_send_queue.length > 0){
 				this._sendNextChunk(this._msg_send_queue.shift())
 			}
@@ -235,6 +235,6 @@ export default class{
 
 	// Fire callback for a status change
 	_statusChange(msg){
-		this._options.onStatusChange(msg)
+		this.options.onStatusChange(msg)
 	}
 }
