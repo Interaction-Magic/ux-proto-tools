@@ -78,7 +78,7 @@ export default class{
 		try{
 			// Request port from user and open it
 			if(this.options.filters){
-				this.port = await navigator.serial.requestPort({ filters: [this.options.filter]})
+				this.port = await navigator.serial.requestPort({ filters: this.options.filters})
 			}else{
 				this.port = await navigator.serial.requestPort()
 			}
@@ -103,6 +103,7 @@ export default class{
 			return this.port.getInfo()
 
 		}catch(e){
+			console.log(e)
 			this.options.onError('Could not open port')
 			return this.isConnected
 		}
