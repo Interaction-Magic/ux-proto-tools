@@ -16,15 +16,15 @@
 		// Filter for different types of dongle, e.g: {usbVendorId:0x2341}
 		// Can check this easily in Chrome at about://device-log
 // 
-//  TBD
-// 
 //  Public methods:
 // 
-//  TBD
+//  - connect(): Prompts the user to select a serial port and establishes a connection.
+//  - send(line): Sends a line of text to the connected serial device.
 // 
 //  Public properties:
 //
-//  TBD
+//  - isConnected: Boolean indicating whether a serial connection is currently established.
+//  - options: Configuration options for the serial connection, including callbacks and settings.
 // 
 //  ***************************************************************
 
@@ -49,6 +49,7 @@ export default class{
 		onSend: (msg) => console.log(`Sending: ${msg}`),
 		onStatusChange: (msg) => { console.log(msg) },
 		onError: (msg) => console.warn(`Error: ${msg}`),
+		onDisconnect: (reason) => console.warn(`Disconnected: ${reason}`),
 
 		// Device connection options
 		baudrate: 115200,
@@ -82,6 +83,15 @@ export default class{
 			}else{
 				this.port = await navigator.serial.requestPort()
 			}
+
+			// Add event listener for disconnect
+			navigator.serial.addEventListener('disconnect', (event) => {
+				// Check if the disconnected port is our port
+				if (event.target === this.port) {
+						this._handleDisconnection('Device was disconnected')
+				}
+			})
+
 			await this.port.open({
 				baudRate: this.options.baudrate
 			})
@@ -127,11 +137,14 @@ export default class{
 			}
 		}catch(e){
 			// Stream failed, probably because connection closed (got unplugged?)
-			this.options.onError(e)
-			this.isConnected = false
+			// this.options.onError(e)
+			// this.isConnected = false
+         this._handleDisconnection(`Read error: ${e.message}`)
 			return false
 		}finally {
-			this.reader.releaseLock()
+			if (this.reader) {
+				 this.reader.releaseLock()
+			}
 		}
 	}
 
@@ -152,7 +165,26 @@ export default class{
 			}else{
 				return new Promise(resolve => 
 					setTimeout(() => resolve(this.send(line)), this.options.minimumWriteInterval)
-				);
+				)
+			}
+		}
+	}
+
+	// Handle disconnection in one place
+	_handleDisconnection(reason) {
+		if (this.isConnected) {
+			this.isConnected = false
+			
+			// Release resources
+			if (this.reader) {
+				this.reader.cancel().catch(e => {})
+			}
+			
+			// Call callback
+			if (this.options.onDisconnect) {
+				this.options.onDisconnect(reason)
+			}else{
+				this.options.onStatusChange(`Disconnected: ${reason}`)
 			}
 		}
 	}
