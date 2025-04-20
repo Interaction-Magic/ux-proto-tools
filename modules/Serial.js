@@ -11,7 +11,7 @@
 // 
 //  ***************************************************************
 // 
-//  Usage:
+//  Usage: 
 
 		// Filter for different types of dongle, e.g: {usbVendorId:0x2341}
 		// Can check this easily in Chrome at about://device-log
